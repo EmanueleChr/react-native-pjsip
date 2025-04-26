@@ -229,7 +229,7 @@ public class PjSipService extends Service {
             mGSMIdle = mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE;
 
             IntentFilter phoneStateFilter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-            registerReceiver(mPhoneStateChangedReceiver, phoneStateFilter, Context.RECEIVER_NOT_EXPORTED);
+            registerReceiver(mPhoneStateChangedReceiver, phoneStateFilter, 0x4);
 
             mInitialized = true;
 
