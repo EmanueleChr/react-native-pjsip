@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
-    namespace "com.mahosyrn.ReactNativePjSip" // metti qui il package corretto se diverso
+    namespace "com.carusto.ReactNativePjSip" // metti qui il package corretto se diverso
     compileSdkVersion 34
 
     defaultConfig {
