@@ -25,6 +25,7 @@ public class PjSipBroadcastReceiver extends BroadcastReceiver {
     private HashMap<Integer, Callback> callbacks = new HashMap<>();
 
     public PjSipBroadcastReceiver(ReactApplicationContext context) {
+        Log.d(TAG, "Costruttore BroadcastReceiver");
         this.context = context;
     }
 
@@ -32,10 +33,20 @@ public class PjSipBroadcastReceiver extends BroadcastReceiver {
         this.context = context;
     }
 
+    public Callback getCallback(int callbackId) {
+        return callbacks.get(callbackId);
+    }
+
     public int register(Callback callback) {
-        int id = ++seq;
-        callbacks.put(id, callback);
-        return id;
+        Log.d(TAG, "Registro callback");
+        try {
+            int id = ++seq;
+            callbacks.put(id, callback);
+            return id;
+        } catch (Exception e) {
+            Log.d(TAG, "Eccezione callback: " + e.getMessage());
+        }
+        return -1;
     }
 
     public IntentFilter getFilter() {
@@ -49,15 +60,17 @@ public class PjSipBroadcastReceiver extends BroadcastReceiver {
         filter.addAction(PjActions.EVENT_CALL_SCREEN_LOCKED);
         filter.addAction(PjActions.EVENT_MESSAGE_RECEIVED);
         filter.addAction(PjActions.EVENT_HANDLED);
-
+        Log.d(TAG, PjActions.EVENT_STARTED);
         return filter;
     }
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d("PjSip", "In ON RECEIVE");
+
         String action = intent.getAction();
 
-        Log.d(TAG, "Received \""+ action +"\" response from service (" + ArgumentUtils.dumpIntentExtraParameters(intent) + ")");
+        Log.d("PjSip", "Received \""+ action +"\" response from service (" + ArgumentUtils.dumpIntentExtraParameters(intent) + ")");
 
         switch (action) {
             case PjActions.EVENT_STARTED:

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.util.Log;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.carusto.ReactNativePjSip.utils.ArgumentUtils;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class PjSipBroadcastEmiter {
 
     public void fireStarted(Intent original, List<PjSipAccount> accounts, List<PjSipCall> calls, JSONObject settings) {
         try {
+
             JSONArray dataAccounts = new JSONArray();
             for (PjSipAccount account : accounts) {
                 dataAccounts.put(account.toJson());
@@ -41,6 +43,8 @@ public class PjSipBroadcastEmiter {
             intent.putExtra("data", data.toString());
 
             context.sendBroadcast(intent);
+
+            Log.d("PjSip", "FireStarted \" Action: "+ intent.getAction());
         } catch (Exception e) {
             Log.e(TAG, "Failed to send ACCOUNT_CREATED event", e);
         }

@@ -13,11 +13,18 @@ public class PjSipModule extends ReactContextBaseJavaModule {
         super(context);
 
         // Module could be started several times, but we have to register receiver only once.
-        if (receiver == null) {
-            receiver = new PjSipBroadcastReceiver(context);
-            this.getReactApplicationContext().registerReceiver(receiver, receiver.getFilter(), 0x4);
-        } else {
-            receiver.setContext(context);
+        try {
+
+            if (receiver == null) {
+                receiver = new PjSipBroadcastReceiver(context);
+                this.getReactApplicationContext().registerReceiver(receiver, receiver.getFilter(), 0x20 | 0x2);
+            } else {
+                receiver.setContext(context);
+            }
+
+            android.util.Log.d("PjSip", "registrazione broadcast receiver effettuata con successo");
+        } catch (Exception e) {
+            android.util.Log.e("PjSip", "errore registrazione broadcast receiver " + e.getMessage());
         }
     }
 
@@ -32,6 +39,7 @@ public class PjSipModule extends ReactContextBaseJavaModule {
         Intent intent = PjActions.createStartIntent(id, configuration, getReactApplicationContext());
 
         getReactApplicationContext().startService(intent);
+        android.util.Log.d("PjSip", "start chiamato");
     }
 
     @ReactMethod

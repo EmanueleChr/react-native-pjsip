@@ -210,44 +210,51 @@ public class PjSipService extends Service {
 
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
-        if (!mInitialized) {
-            if (intent != null && intent.hasExtra("service")) {
-                mServiceConfiguration = ServiceConfigurationDTO.fromMap((Map) intent.getSerializableExtra("service"));
+        android.util.Log.d(TAG, "DENTRO START COMMAND");
+
+        try {
+
+            if (!mInitialized) {
+                if (intent != null && intent.hasExtra("service")) {
+                    mServiceConfiguration = ServiceConfigurationDTO.fromMap((Map) intent.getSerializableExtra("service"));
+                }
+
+                mWorkerThread = new HandlerThread(getClass().getSimpleName(), Process.THREAD_PRIORITY_FOREGROUND);
+                mWorkerThread.setPriority(Thread.MAX_PRIORITY);
+                mWorkerThread.start();
+                mHandler = new Handler(mWorkerThread.getLooper());
+                mEmitter = new PjSipBroadcastEmiter(this);
+                mAudioManager = (AudioManager) getApplicationContext().getSystemService(AUDIO_SERVICE);
+                mPowerManager = (PowerManager) getApplicationContext().getSystemService(POWER_SERVICE);
+                mWifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                mWifiLock = mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, this.getPackageName()+"-wifi-call-lock");
+                mWifiLock.setReferenceCounted(false);
+                mTelephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+                mGSMIdle = mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE;
+
+                IntentFilter phoneStateFilter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
+                registerReceiver(mPhoneStateChangedReceiver, phoneStateFilter, 0x4);
+
+                mInitialized = true;
+
+                job(new Runnable() {
+                    @Override
+                    public void run() {
+                        load();
+                    }
+                });
             }
 
-            mWorkerThread = new HandlerThread(getClass().getSimpleName(), Process.THREAD_PRIORITY_FOREGROUND);
-            mWorkerThread.setPriority(Thread.MAX_PRIORITY);
-            mWorkerThread.start();
-            mHandler = new Handler(mWorkerThread.getLooper());
-            mEmitter = new PjSipBroadcastEmiter(this);
-            mAudioManager = (AudioManager) getApplicationContext().getSystemService(AUDIO_SERVICE);
-            mPowerManager = (PowerManager) getApplicationContext().getSystemService(POWER_SERVICE);
-            mWifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            mWifiLock = mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, this.getPackageName()+"-wifi-call-lock");
-            mWifiLock.setReferenceCounted(false);
-            mTelephonyManager = (TelephonyManager) getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
-            mGSMIdle = mTelephonyManager.getCallState() == TelephonyManager.CALL_STATE_IDLE;
-
-            IntentFilter phoneStateFilter = new IntentFilter(TelephonyManager.ACTION_PHONE_STATE_CHANGED);
-            registerReceiver(mPhoneStateChangedReceiver, phoneStateFilter, 0x4);
-
-            mInitialized = true;
-
-            job(new Runnable() {
-                @Override
-                public void run() {
-                    load();
-                }
-            });
-        }
-
-        if (intent != null) {
-            job(new Runnable() {
-                @Override
-                public void run() {
-                    handle(intent);
-                }
-            });
+            if (intent != null) {
+                job(new Runnable() {
+                    @Override
+                    public void run() {
+                        handle(intent);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            android.util.Log.d(TAG, "Errore servizio " + e.getMessage());
         }
 
         return START_NOT_STICKY;
@@ -401,6 +408,8 @@ public class PjSipService extends Service {
 
     private void handleStart(Intent intent) {
         try {
+            android.util.Log.d("PjSipModule", "DENTRO AL SERVIZIO");
+
             // Modify existing configuration if it changes during application reload.
             if (intent.hasExtra("service")) {
                 ServiceConfigurationDTO newServiceConfiguration = ServiceConfigurationDTO.fromMap((Map) intent.getSerializableExtra("service"));
@@ -603,6 +612,8 @@ public class PjSipService extends Service {
 
     private void handleCallMake(Intent intent) {
         try {
+            Log.d(TAG, "In Handle Call Make");
+
             int accountId = intent.getIntExtra("account_id", -1);
             PjSipAccount account = findAccount(accountId);
             String destination = intent.getStringExtra("destination");
@@ -655,9 +666,9 @@ public class PjSipService extends Service {
 
                 mTrash.add(callTxOption);
             }
-
             PjSipCall call = new PjSipCall(account);
             call.makeCall(destination, callOpParam);
+            Log.d(TAG, "Dopo di make call");
 
             callOpParam.delete();
 
@@ -667,6 +678,7 @@ public class PjSipService extends Service {
             mCalls.add(call);
             mEmitter.fireIntentHandled(intent, call.toJson());
         } catch (Exception e) {
+            Log.e(TAG, "Errore make call" + e.getMessage());
             mEmitter.fireIntentHandled(intent, e);
         }
     }
